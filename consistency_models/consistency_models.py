@@ -3,7 +3,7 @@ from typing import Any, Callable, Iterable, Optional, Union
 
 import torch
 from torch import Tensor, nn
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 from .utils import pad_dims_like
 
