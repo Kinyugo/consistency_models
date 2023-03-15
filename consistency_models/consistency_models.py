@@ -440,9 +440,9 @@ class ConsistencySamplingAndEditing:
         Tensor
             Intepolated sample.
         """
-        # Obtain latent vectors from the initial samples
-        a = a * sigmas[0] * torch.randn_like(a)
-        b = b * sigmas[0] * torch.randn_like(b)
+        # Obtain latent samples from the initial samples
+        a = a + sigmas[0] * torch.randn_like(a)
+        b = b + sigmas[0] * torch.randn_like(b)
 
         # Perform spherical linear interpolation of the latents
         omega = torch.arccos(torch.sum((a / a.norm(p=2)) * (b / b.norm(p=2))))
@@ -470,4 +470,4 @@ class ConsistencySamplingAndEditing:
         transform_fn: Callable[[Tensor], Tensor] = lambda x: x,
         inverse_transform_fn: Callable[[Tensor], Tensor] = lambda x: x,
     ) -> Tensor:
-        return inverse_transform_fn(transform_fn(y) * (1 - mask) + x * mask)
+        return inverse_transform_fn(transform_fn(y) * (1.0 - mask) + x * mask)
