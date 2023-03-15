@@ -166,7 +166,7 @@ cython_debug/
 checkpoints/
 
 # Logs created during runs
-logs/
+*logs/
 
 # Random collection of scripts and notebooks for hacking
 playground/

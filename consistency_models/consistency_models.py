@@ -216,7 +216,6 @@ class ConsistencyTraining:
         sigma_data: float = 0.5,
         initial_timesteps: int = 2,
         final_timesteps: int = 150,
-        initial_ema_decay_rate: float = 0.95,
     ) -> None:
         self.sigma_min = sigma_min
         self.sigma_max = sigma_max
@@ -224,7 +223,6 @@ class ConsistencyTraining:
         self.sigma_data = sigma_data
         self.initial_timesteps = initial_timesteps
         self.final_timesteps = final_timesteps
-        self.initial_ema_decay_rate = initial_ema_decay_rate
 
     def __call__(
         self,
