@@ -322,7 +322,8 @@ class ConsistencySamplingAndEditing:
         mask: Optional[Tensor] = None,
         transform_fn: Callable[[Tensor], Tensor] = lambda x: x,
         inverse_transform_fn: Callable[[Tensor], Tensor] = lambda x: x,
-        start_from_y: Tensor = False,
+        start_from_y: bool = False,
+        add_initial_noise: bool = True,
         clip_denoised: bool = False,
         verbose: bool = False,
         **kwargs: Any,
@@ -349,6 +350,9 @@ class ConsistencySamplingAndEditing:
         start_from_y : bool, default=False
             Whether to use y as an initial sample and add noise to it instead of starting
             from random gaussian noise. This is useful for tasks like style transfer.
+        add_initial_noise : bool, default=True
+            Whether to add noise at the start of the schedule. Useful for tasks like interpolation
+            where noise will alerady be added in advance.
         clip_denoised : bool, default=False
             Whether to clip denoised values to [-1, 1] range.
         verbose : bool, default=False
@@ -365,14 +369,15 @@ class ConsistencySamplingAndEditing:
         if mask is None:
             mask = torch.ones_like(y)
 
-        x = torch.zeros_like(y)
-        # Use y as an initial sample
-        if start_from_y:
-            x = y
+        # Use y as an initial sample which is useful to tasks like style transfer
+        # and interpolation where we want to use content from the reference sample
+        x = y if start_from_y else torch.zeros_like(y)
 
         # Sample at the end of the schedule
         y = self.__mask_transform(x, y, mask, transform_fn, inverse_transform_fn)
-        x = y + sigmas[0] * torch.randn_like(y)
+        # For tasks like interpolation where noise will already be added in advance we
+        # can skip the noising process
+        x = y + sigmas[0] * torch.randn_like(y) if add_initial_noise else y
         sigma = torch.full((x.shape[0],), sigmas[0], dtype=x.dtype, device=x.device)
         x = model_forward_wrapper(
             model, x, sigma, self.sigma_data, self.sigma_min, **kwargs
@@ -399,6 +404,63 @@ class ConsistencySamplingAndEditing:
             x = self.__mask_transform(x, y, mask, transform_fn, inverse_transform_fn)
 
         return x
+
+    def interpolate(
+        self,
+        model: nn.Module,
+        a: Tensor,
+        b: Tensor,
+        ab_ratio: float,
+        sigmas: Iterable[Union[Tensor, float]],
+        clip_denoised: bool = False,
+        verbose: bool = False,
+        **kwargs: Any,
+    ) -> Tensor:
+        """Runs the interpolation  loop.
+
+        Parameters
+        ----------
+        model : nn.Module
+            Model to sample from.
+        a : Tensor
+            First reference sample.
+        b : Tensor
+            Second refernce sample.
+        ab_ratio : float
+            Ratio of the first reference sample to the second reference sample.
+        clip_denoised : bool, default=False
+            Whether to clip denoised values to [-1, 1] range.
+        verbose : bool, default=False
+            Whether to display the progress bar.
+        **kwargs : Any
+            Additional keyword arguments to be passed to the model.
+
+        Returns
+        -------
+        Tensor
+            Intepolated sample.
+        """
+        # Obtain latent vectors from the initial samples
+        a = a * sigmas[0] * torch.randn_like(a)
+        b = b * sigmas[0] * torch.randn_like(b)
+
+        # Perform spherical linear interpolation of the latents
+        omega = torch.arccos(torch.sum((a / a.norm(p=2)) * (b / b.norm(p=2))))
+        a = torch.sin(ab_ratio * omega) / torch.sin(omega) * a
+        b = torch.sin((1 - ab_ratio) * omega) / torch.sin(omega) * b
+        ab = a + b
+
+        # Denoise the interpolated latents
+        return self(
+            model,
+            ab,
+            sigmas,
+            start_from_y=True,
+            add_initial_noise=False,
+            clip_denoised=clip_denoised,
+            verbose=verbose,
+            **kwargs,
+        )
 
     def __mask_transform(
         self,
