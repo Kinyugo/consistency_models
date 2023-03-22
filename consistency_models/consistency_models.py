@@ -1,5 +1,5 @@
 import math
-from typing import Any, Callable, Iterable, Optional, Union
+from typing import Any, Callable, Iterable, Optional, Tuple, Union
 
 import torch
 from torch import Tensor, nn
@@ -231,9 +231,8 @@ class ConsistencyTraining:
         x: Tensor,
         current_training_step: int,
         total_training_steps: int,
-        loss_fn: Callable[[Tensor, Tensor], Tensor] = nn.functional.mse_loss,
         **kwargs: Any,
-    ) -> Tensor:
+    ) -> Tuple[Tensor, Tensor]:
         """Runs one step of the consistency training algorithm.
 
         Parameters
@@ -248,15 +247,13 @@ class ConsistencyTraining:
             Current step in the training loop.
         total_training_steps : int
             Total number of steps in the training loop.
-        loss_fn : Callable[[Tensor, Tensor], Tensor], default=torch.nn.functional.mse_loss
-            A distance metric.
         **kwargs : Any
             Additional keyword arguments to be passed to the models.
 
         Returns
         -------
-        Tensor
-            The computed loss using the `loss_fn`.
+        (Tensor, Tensor)
+            The predicted and target values for computing the loss.
         """
         num_timesteps = timesteps_schedule(
             current_training_step,
@@ -294,7 +291,7 @@ class ConsistencyTraining:
                 **kwargs,
             )
 
-        return loss_fn(next_x, current_x)
+        return (next_x, current_x)
 
 
 class ConsistencySamplingAndEditing:
