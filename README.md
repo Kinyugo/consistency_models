@@ -67,7 +67,7 @@ for step in range(max_steps):
         batch,
         step,
         max_steps,
-        my_kwarg=my_kwarg, # passed to the online and ema model as kwargs useful for conditioning
+        my_kwarg=my_kwarg, # passed to the model as kwargs useful for conditioning
     )
 
     # Loss Computation
@@ -107,6 +107,7 @@ with torch.no_grad():
         sigmas=[80.0], # sampling starts at the maximum std (T)
         clip_denoised=True, # whether to clamp values to [-1, 1] range
         verbose=True,
+        my_kwarg=my_kwarg, # passed to the model as kwargs useful for conditioning
     )
 ```
 
@@ -127,6 +128,7 @@ with torch.no_grad():
         mask=mask,
         clip_denoised=True,
         verbose=True,
+        my_kwarg=my_kwarg, # passed to the model as kwargs useful for conditioning
     )
 ```
 
@@ -145,6 +147,7 @@ with torch.no_grad():
         sigmas=[5.23, 2.25],
         clip_denoised=True,
         verbose=True,
+        my_kwarg=my_kwarg, # passed to the model as kwargs useful for conditioning
     )
 ```
 
