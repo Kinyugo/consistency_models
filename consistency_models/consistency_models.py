@@ -364,7 +364,7 @@ class ConsistencySamplingAndEditing:
         if mask is None:
             mask = torch.ones_like(y)
 
-        # Use y as an initial sample which is useful to tasks like style transfer
+        # Use y as an initial sample which is useful for tasks like style transfer
         # and interpolation where we want to use content from the reference sample
         x = y if start_from_y else torch.zeros_like(y)
 
