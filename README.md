@@ -6,6 +6,8 @@ A general purpose training and inference library for Consistency Models introduc
 
 Consistency Models are a new family of generative models that achieve high sample quality without adversarial training. They support fast one-step generation by design, while still allowing for few-step sampling to trade compute for sample quality. They also support zero-shot data editing, like image inpainting, colorization, and super-resolution, without requiring explicit training on these tasks.
 
+> 🔔 **Note**: The library is modality agnostic and can be used to train all kinds of consitency models.
+
 ## 🚀 Key Features
 
 - Consitency Training
