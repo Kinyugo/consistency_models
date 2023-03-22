@@ -27,6 +27,7 @@ pip install -q -e git+https://github.com/Kinyugo/consistency_models.git#egg=cons
 ```python
 import torch
 from consistency_models import ConsistencySamplingAndEditing, ConsistencyTraining
+from consistency_models.consistency_models import timesteps_schedule, ema_decay_rate_schedule
 from consistency_models.utils import update_ema_model
 ```
 
@@ -77,7 +78,18 @@ for step in range(max_steps):
     optimizer.step()
 
     # EMA Update
-    update_ema_model(ema_model)
+    num_timesteps = timesteps_schedule(
+        step,
+        max_steps,
+        initial_timesteps=2,
+        final_timesteps=150,
+    )
+    ema_decay_rate = ema_decay_rate_schedule(
+        num_timesteps,
+        initial_ema_decay_rate=0.95,
+        initial_timesteps=2,
+    )
+    update_ema_model(ema_model, online_model, ema_decay_rate)
 ```
 
 ### Consistency Sampling
