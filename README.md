@@ -173,3 +173,12 @@ Contributions from the community are welcome! If you have any ideas or suggestio
   journal      = {arXiv preprint arXiv:2303.01469}
 }
 ```
+
+```bibtex
+@article{karras2022elucidating,
+  title        = {Elucidating the design space of diffusion-based generative models},
+  author       = {Karras, Tero and Aittala, Miika and Aila, Timo and Laine, Samuli},
+  year         = 2022,
+  journal      = {arXiv preprint arXiv:2206.00364}
+}
+```
