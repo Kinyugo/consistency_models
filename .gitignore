@@ -177,3 +177,9 @@ samples/
 # Dummy data for testing
 dummy_data/
 data/
+
+# Test notebooks
+test_notebooks/
+
+# Notebook Checkpoints
+notebooks/checkpoint/
