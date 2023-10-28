@@ -104,7 +104,7 @@ from consistency_models import ConsistencySamplingAndEditing, ImprovedConsistenc
 
 For improved consistency training three things are required:
 
-- A model ($F_{\theta}$). The network should take the noisy sample as the first argument and the timestep as the second argument other arguments can be passed and keyword arguments. Note that the skip connection will be applied automatically. In this case no exponential moving average of the model is required.
+- A student model ($F_{\theta}$). The network should take the noisy sample as the first argument and the timestep as the second argument other arguments can be passed and keyword arguments. Note that the skip connection will be applied automatically. In this case no exponential moving average of the model is required.
 - A loss function. For image tasks the authors propose pseudo-huber loss.
 
 ```python
@@ -113,7 +113,7 @@ loss_fn = ... # can be anything; pseudo-huber, l1, mse, lpips e.t.c or a combina
 optimizer = torch.optim.Adam(student_model.parameters(), lr=1e-4, betas=(0.9, 0.995)) # setup your optimizer
 
 # Initialize the training module using
-consistency_training = ImprovedConsistencyTraining(
+improved_consistency_training = ImprovedConsistencyTraining(
     sigma_min = 0.002, # minimum std of noise
     sigma_max = 80.0, # maximum std of noise
     rho = 7.0, # karras-schedule hyper-parameter
@@ -130,9 +130,8 @@ for current_training_step in range(total_training_steps):
 
     # Forward Pass
     batch = get_batch()
-    output = consistency_training(
+    output = improved_consistency_training(
         student_model,
-        teacher_model,
         batch,
         current_training_step,
         total_training_steps,
@@ -160,7 +159,7 @@ consistency_sampling_and_editing = ConsistencySamplingAndEditing(
 
 with torch.no_grad():
     samples = consistency_sampling_and_editing(
-        model, # student model or any trained model
+        student_model, # student model or any trained model
         torch.randn((4, 3, 128, 128)), # used to infer the shapes
         sigmas=[80.0], # sampling starts at the maximum std (T)
         clip_denoised=True, # whether to clamp values to [-1, 1] range
@@ -180,7 +179,7 @@ masked_batch = ... # samples with masked out regions
 
 with torch.no_grad():
     inpainted_batch = consistency_sampling_and_editing(
-        model,# student model or any trained model
+        student_model,# student model or any trained model
         masked_batch,
         sigmas=[5.23, 2.25], # noise std as proposed in the paper
         mask=mask,
@@ -198,7 +197,7 @@ batch_b = ... # second clean samples
 
 with torch.no_grad():
     interpolated_batch = consistency_sampling_and_editing.interpolate(
-        model, # student model or any trained model
+        student_model, # student model or any trained model
         batch_a,
         batch_b,
         ab_ratio=0.5,
