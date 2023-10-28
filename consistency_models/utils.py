@@ -34,7 +34,7 @@ def _update_ema_weights(
             ema_weight.data.lerp_(online_weight.data, 1.0 - ema_decay_rate)
 
 
-def update_ema_model(
+def update_ema_model_(
     ema_model: nn.Module, online_model: nn.Module, ema_decay_rate: float
 ) -> nn.Module:
     """Updates weights of a moving average model with an online/source model.

@@ -1,4 +1,5 @@
 import math
+from dataclasses import dataclass
 from typing import Any, Callable, Iterable, Optional, Tuple, Union
 
 import torch
@@ -304,6 +305,31 @@ def model_forward_wrapper(
     return c_skip * x + c_out * model(x, sigma, **kwargs)
 
 
+@dataclass
+class ConsistencyTrainingOutput:
+    """Type of the output of the (Improved)ConsistencyTraining.__call__ method.
+
+    Attributes
+    ----------
+    predicted : Tensor
+        Predicted values.
+    target : Tensor
+        Target values.
+    num_timesteps : int
+        Number of timesteps at the current point in training from the timestep discretization schedule.
+    sigmas : Tensor
+        Standard deviations of the noise.
+    loss_weights : Optional[Tensor], default=None
+        Weighting for the Improved Consistency Training loss.
+    """
+
+    predicted: Tensor
+    target: Tensor
+    num_timesteps: int
+    sigmas: Tensor
+    loss_weights: Optional[Tensor] = None
+
+
 class ConsistencyTraining:
     """Implements the Consistency Training algorithm proposed in the paper.
 
@@ -341,21 +367,21 @@ class ConsistencyTraining:
 
     def __call__(
         self,
-        online_model: nn.Module,
-        ema_model: nn.Module,
+        student_model: nn.Module,
+        teacher_model: nn.Module,
         x: Tensor,
         current_training_step: int,
         total_training_steps: int,
         **kwargs: Any,
-    ) -> Tuple[Tensor, Tensor]:
+    ) -> ConsistencyTrainingOutput:
         """Runs one step of the consistency training algorithm.
 
         Parameters
         ----------
-        online_model : nn.Module
+        student_model : nn.Module
             Model that is being trained.
-        ema_model : nn.Module
-            An EMA of the online model.
+        teacher_model : nn.Module
+            An EMA of the student model.
         x : Tensor
             Clean data.
         current_training_step : int
@@ -367,8 +393,8 @@ class ConsistencyTraining:
 
         Returns
         -------
-        (Tensor, Tensor)
-            The predicted and target values for computing the loss.
+        ConsistencyTrainingOutput
+            The predicted and target values for computing the loss as well as sigmas (noise levels).
         """
         num_timesteps = timesteps_schedule(
             current_training_step,
@@ -382,13 +408,14 @@ class ConsistencyTraining:
         noise = torch.randn_like(x)
 
         timesteps = torch.randint(0, num_timesteps - 1, (x.shape[0],), device=x.device)
+
         current_sigmas = sigmas[timesteps]
         next_sigmas = sigmas[timesteps + 1]
 
-        next_x = x + pad_dims_like(next_sigmas, x) * noise
+        next_noisy_x = x + pad_dims_like(next_sigmas, x) * noise
         next_x = model_forward_wrapper(
-            online_model,
-            next_x,
+            student_model,
+            next_noisy_x,
             next_sigmas,
             self.sigma_data,
             self.sigma_min,
@@ -396,17 +423,17 @@ class ConsistencyTraining:
         )
 
         with torch.no_grad():
-            current_x = x + pad_dims_like(current_sigmas, x) * noise
+            current_noisy_x = x + pad_dims_like(current_sigmas, x) * noise
             current_x = model_forward_wrapper(
-                ema_model,
-                current_x,
+                teacher_model,
+                current_noisy_x,
                 current_sigmas,
                 self.sigma_data,
                 self.sigma_min,
                 **kwargs,
             )
 
-        return (next_x, current_x)
+        return ConsistencyTrainingOutput(next_x, current_x, num_timesteps, sigmas)
 
 
 class ImprovedConsistencyTraining:
@@ -454,19 +481,18 @@ class ImprovedConsistencyTraining:
 
     def __call__(
         self,
-        student_model: nn.Module,
-        teacher_model: nn.Module,
+        model: nn.Module,
         x: Tensor,
         current_training_step: int,
         total_training_steps: int,
         **kwargs: Any,
-    ) -> Tuple[Tensor, Tensor, Tensor]:
+    ) -> ConsistencyTrainingOutput:
         """Runs one step of the improved consistency training algorithm.
 
         Parameters
         ----------
-        student_model : nn.Module
-            Model that is being trained.
+        model : nn.Module
+            Both teacher and student model.
         teacher_model : nn.Module
             Teacher model.
         x : Tensor
@@ -480,8 +506,8 @@ class ImprovedConsistencyTraining:
 
         Returns
         -------
-        (Tensor, Tensor, Tensor)
-            The loss, predicted and target values for computing the loss.
+        ConsistencyTrainingOutput
+            The predicted and target values for computing the loss, sigmas (noise levels) as well as the loss weights.
         """
 
         num_timesteps = improved_timesteps_schedule(
@@ -504,7 +530,7 @@ class ImprovedConsistencyTraining:
 
         next_noisy_x = x + pad_dims_like(next_sigmas, x) * noise
         next_x = model_forward_wrapper(
-            student_model,
+            model,
             next_noisy_x,
             next_sigmas,
             self.sigma_data,
@@ -515,7 +541,7 @@ class ImprovedConsistencyTraining:
         with torch.no_grad():
             current_noisy_x = x + pad_dims_like(current_sigmas, x) * noise
             current_x = model_forward_wrapper(
-                teacher_model,
+                model,
                 current_noisy_x,
                 current_sigmas,
                 self.sigma_data,
@@ -524,9 +550,10 @@ class ImprovedConsistencyTraining:
             )
 
         loss_weights = pad_dims_like(improved_loss_weighting(sigmas)[timesteps], next_x)
-        loss = (pseudo_huber_loss(next_x, current_x) * loss_weights).mean()
 
-        return loss, next_x, current_x
+        return ConsistencyTrainingOutput(
+            next_x, current_x, num_timesteps, sigmas, loss_weights
+        )
 
 
 class ConsistencySamplingAndEditing:
