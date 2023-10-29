@@ -1,6 +1,6 @@
 # Consistency Models
 
-[![arXiv](https://img.shields.io/badge/arXiv-2301.01469-<COLOR>.svg)](https://arxiv.org/abs/2303.01469) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Kinyugo/consistency_models/blob/main/notebooks/consistency_models_training_example.ipynb) [![GitHub Repo stars](https://img.shields.io/github/stars/Kinyugo/consistency_models?style=social) ](https://github.com/Kinyugo/consistency_models)
+[![arXiv](https://img.shields.io/badge/arXiv-2301.01469-<COLOR>.svg)](https://arxiv.org/abs/2303.01469) [![arXiv](https://img.shields.io/badge/arXiv-2301.01469-<COLOR>.svg)](https://arxiv.org/abs/2310.14189) [![GitHub Repo stars](https://img.shields.io/github/stars/Kinyugo/consistency_models?style=social) ](https://github.com/Kinyugo/consistency_models)
 
 A general purpose training and inference library for Consistency Models introduced in the paper ["Consistency Models"](https://arxiv.org/abs/2303.01469) by OpenAI.
 
@@ -211,6 +211,22 @@ with torch.no_grad():
 ## 📚 Examples
 
 Checkout the [notebooks](https://colab.research.google.com/github/Kinyugo/consistency_models/blob/main/notebooks) complete with training, sampling and zero-shot editing examples.
+
+- Consistency Models [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Kinyugo/consistency_models/blob/main/notebooks/consistency_models_training_example.ipynb)
+- Improved Techniques For Training Consistency Models [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Kinyugo/consistency_models/blob/main/notebooks/improved_techniques_for_consistency_training_example.ipynb)
+
+## 🗒️ Notes
+
+-
+    - **Observation:** In our exploration of both Consistency Models and Improved Techniques For Training Consistency Models, we have identified the significant impact of scaling the final timesteps within the timestep discretization schedule.
+
+    - **Paper Context:** The paper outlines a training regimen involving 600k+ iterations with final timesteps set at `150` and `1280` for the respective models.
+
+    - **Experimental Insight:** In our experiments, especially on smaller datasets like the butterflies dataset trained for just 10k iterations, we made an intriguing observation. When we adjusted the final timestep values to `17` and `11`, mirroring the values that would be expected if we trained for 600k+ iterations, we achieved acceptable results.
+
+    - **Inconsistency in Results:** However, when we adhered to the full schedule, the outcome was characterized by a high degree of noise. This raises questions about the influence of these final timestep settings on model performance.
+
+    - **Recommendation:** This parameter has not been thoroughly explored, and we suggest that it be subject to further investigation in your own experiments. If you encounter a sudden increase in loss, consider tweaking this parameter as it may prove instrumental in achieving desirable outcomes.
 
 ## 📌 Todo
 
