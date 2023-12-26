@@ -7,7 +7,7 @@ URL = "https://github.com/Kinyugo/consistency_models"
 EMAIL = "kinyugomaina@gmail.com"
 AUTHOR = "Kinyugo Maina"
 REQUIRES_PYTHON = ">=3.6.0"
-VERSION = "0.0.2"
+VERSION = "0.0.3"
 
 # Required packages
 REQUIRED = [
