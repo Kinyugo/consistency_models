@@ -33,7 +33,7 @@ def timesteps_schedule(
     int
         Number of timesteps at the current point in training.
     """
-    num_timesteps = final_timesteps**2 - initial_timesteps**2
+    num_timesteps = (final_timesteps + 1) ** 2 - initial_timesteps**2
     num_timesteps = current_training_step * num_timesteps / total_training_steps
     num_timesteps = math.ceil(math.sqrt(num_timesteps + initial_timesteps**2) - 1)
 
